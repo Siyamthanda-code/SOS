@@ -53,10 +53,10 @@ The application is fully responsive and optimized for:
 ## 🌍 South African Support Resources
 The application includes localized resources for South African users:
 
-Suicide Crisis Line: 0800 567 567 (24/7 in all 11 official languages)
-GBV Helpline: 0800 150 150 (Toll-free, 24/7)
-Mental Health Support: LifeLine South Africa
-Substance Abuse Helpline: Department of Social Development
+- **Suicide Crisis Line**: 0800 567 567 (24/7 in all 11 official languages)
+- **GBV Helpline**: 0800 150 150 (Toll-free, 24/7)
+- **Mental Health Support**: 0861 322 322
+- **Substance Abuse Helpline**: 0800 121 314
 
 ## Disclaimer 
 This platform is not a substitute for professional medical advice, diagnosis, or treatment. If you are in crisis or need immediate help, please use the emergency resources provided or contact local emergency services.
