@@ -2,7 +2,7 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: process.env.NETLIFY_DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
 
@@ -32,4 +32,5 @@ exports.handler = async (event, context) => {
   } catch (error) {
     return { statusCode: 500, body: error.toString() };
   }
+
 };
