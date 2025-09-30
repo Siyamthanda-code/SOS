@@ -358,410 +358,499 @@
     </div>
 
     <script>
-        // Suppress Tailwind CSS warning
-        if (window.console && window.console.warn) {
-            const originalWarn = window.console.warn;
-            window.console.warn = function(...args) {
-                if (typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) {
-                    return;
-                }
-                originalWarn.apply(window.console, args);
-            };
-        }
-
-        // API endpoints
-        const API_BASE_URL = '/.netlify/functions';
-
-        // Global variables
-        let currentFilter = 'all';
-        let allPosts = [];
-
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            loadPosts();
-            checkDarkMode();
-        });
-
-        // Dark mode functionality
-        function toggleDarkMode() {
-            document.body.classList.toggle('dark');
-            const icon = document.getElementById('darkModeIcon');
-            icon.classList.toggle('fa-moon');
-            icon.classList.toggle('fa-sun');
-            localStorage.setItem('darkMode', document.body.classList.contains('dark'));
-        }
-
-        function checkDarkMode() {
-            if (localStorage.getItem('darkMode') === 'true') {
-                document.body.classList.add('dark');
-                document.getElementById('darkModeIcon').classList.remove('fa-moon');
-                document.getElementById('darkModeIcon').classList.add('fa-sun');
-            }
-        }
-
-        // Load posts from database
-        async function loadPosts() {
-            try {
-                const response = await fetch(`${API_BASE_URL}/posts`);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                allPosts = await response.json();
-                renderPosts();
-            } catch (error) {
-                console.error('Error loading posts:', error);
-                showNotification('Failed to load posts. Please try again later.', 'error');
-            }
-        }
-
-        // Submit post to database
-        async function submitPost(event) {
-            event.preventDefault();
-            
-            const topic = document.getElementById('postTopic').value;
-            const content = document.getElementById('postContent').value.trim();
-            const hasWarning = document.getElementById('contentWarning').checked;
-            
-            if (!content) {
-                showNotification('Please share your story before submitting.', 'error');
+    // Suppress Tailwind CSS warning
+    if (window.console && window.console.warn) {
+        const originalWarn = window.console.warn;
+        window.console.warn = function(...args) {
+            if (typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) {
                 return;
             }
-            
-            try {
-                const response = await fetch(`${API_BASE_URL}/posts`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ topic, content, hasWarning })
-                });
-                
-                if (response.ok) {
-                    // Reset form
-                    document.getElementById('postContent').value = '';
-                    document.getElementById('contentWarning').checked = false;
-                    
-                    // Reload posts
-                    loadPosts();
-                    
-                    showNotification('Your story has found sanctuary. Thank you for your courage.', 'success');
-                } else {
-                    throw new Error('Failed to create post');
+            originalWarn.apply(window.console, args);
+        };
+    }
+
+    // API endpoints
+    const API_BASE_URL = '/.netlify/functions';
+
+    // Global variables
+    let currentFilter = 'all';
+    let allPosts = [];
+
+    // Sample fallback data
+    const samplePosts = [
+        {
+            id: 1,
+            topic: 'regret',
+            content: 'I regret not saying goodbye to my grandmother before she passed. I was too busy with work and thought I had more time. Now I carry this guilt every day.',
+            timestamp: new Date(Date.now() - 3600000),
+            has_warning: false,
+            reactions: { support: 12, strength: 8, hope: 15 },
+            comments: [
+                {
+                    id: 101,
+                    content: "I understand this feeling. I lost my father suddenly and didn't get to say goodbye either. The guilt is overwhelming sometimes.",
+                    timestamp: new Date(Date.now() - 1800000)
+                },
+                {
+                    id: 102,
+                    content: "Your grandmother knew you loved her. Sometimes life gets in the way, but that doesn't diminish your love for her.",
+                    timestamp: new Date(Date.now() - 1200000)
                 }
-            } catch (error) {
-                console.error('Error submitting post:', error);
-                showNotification('Failed to share your story. Please try again.', 'error');
+            ]
+        },
+        {
+            id: 2,
+            topic: 'trauma',
+            content: 'I was in a car accident 5 years ago and still have panic attacks when I hear screeching tires. Therapy has helped, but some days are harder than others.',
+            timestamp: new Date(Date.now() - 7200000),
+            has_warning: true,
+            reactions: { support: 23, strength: 18, hope: 20 },
+            comments: [
+                {
+                    id: 201,
+                    content: "Have you tried EMDR therapy? It helped me with my PTSD from a similar experience.",
+                    timestamp: new Date(Date.now() - 5400000)
+                }
+            ]
+        },
+        {
+            id: 3,
+            topic: 'background',
+            content: 'Growing up in poverty shaped who I am today. I learned to be resilient, but sometimes I feel like I missed out on a normal childhood.',
+            timestamp: new Date(Date.now() - 10800000),
+            has_warning: false,
+            reactions: { support: 31, strength: 25, hope: 28 },
+            comments: []
+        },
+        {
+            id: 4,
+            topic: 'confessions',
+            content: 'I confess that I sometimes feel jealous of my friends who had easier lives. I know it\'s not fair to compare, but I can\'t help feeling like I was dealt a harder hand.',
+            timestamp: new Date(Date.now() - 14400000),
+            has_warning: false,
+            reactions: { support: 18, strength: 12, hope: 10 },
+            comments: [
+                {
+                    id: 401,
+                    content: "It's okay to feel that way. Your feelings are valid. It doesn't make you a bad person.",
+                    timestamp: new Date(Date.now() - 9000000)
+                }
+            ]
+        }
+    ];
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+        loadPosts();
+        checkDarkMode();
+    });
+
+    // Dark mode functionality
+    function toggleDarkMode() {
+        document.body.classList.toggle('dark');
+        const icon = document.getElementById('darkModeIcon');
+        icon.classList.toggle('fa-moon');
+        icon.classList.toggle('fa-sun');
+        localStorage.setItem('darkMode', document.body.classList.contains('dark'));
+    }
+
+    function checkDarkMode() {
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark');
+            document.getElementById('darkModeIcon').classList.remove('fa-moon');
+            document.getElementById('darkModeIcon').classList.add('fa-sun');
+        }
+    }
+
+    // Load posts from database with fallback
+    async function loadPosts() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/posts`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-        }
-
-        // Render posts
-        function renderPosts() {
-            const container = document.getElementById('postsContainer');
-            const filteredPosts = currentFilter === 'all' 
-                ? allPosts 
-                : allPosts.filter(post => post.topic === currentFilter);
+            const posts = await response.json();
             
-            container.innerHTML = filteredPosts.map(post => createPostHTML(post)).join('');
-        }
-
-        // Create post HTML
-        function createPostHTML(post) {
-            const timeAgo = getTimeAgo(new Date(post.timestamp));
-            const topicLabels = {
-                regret: 'Regret',
-                trauma: 'Trauma',
-                gbv: 'GBV',
-                background: 'Background',
-                confessions: 'Confession',
-                other: 'Other'
-            };
+            // If database is empty, use sample data
+            if (posts.length === 0) {
+                console.log('Database is empty, using sample data');
+                allPosts = samplePosts;
+            } else {
+                allPosts = posts;
+            }
             
-            return `
-                <div class="post-card bg-white rounded-lg shadow-md p-6 fade-in transition-colors duration-300">
-                    <div class="flex items-start justify-between mb-4">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                                <i class="fas fa-dove text-purple-600"></i>
-                            </div>
-                            <div>
-                                <p class="font-medium text-gray-800">Anonymous Soul</p>
-                                <p class="text-sm text-gray-600">${timeAgo} • ${topicLabels[post.topic]}</p>
-                            </div>
+            renderPosts();
+        } catch (error) {
+            console.error('Error loading posts:', error);
+            // Use sample data as fallback
+            console.log('Using sample data due to error');
+            allPosts = samplePosts;
+            renderPosts();
+            showNotification('Using sample data. Database connection may be unavailable.', 'info');
+        }
+    }
+
+    // Submit post to database
+    async function submitPost(event) {
+        event.preventDefault();
+        
+        const topic = document.getElementById('postTopic').value;
+        const content = document.getElementById('postContent').value.trim();
+        const hasWarning = document.getElementById('contentWarning').checked;
+        
+        if (!content) {
+            showNotification('Please share your story before submitting.', 'error');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${API_BASE_URL}/posts`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ topic, content, hasWarning })
+            });
+            
+            if (response.ok) {
+                // Reset form
+                document.getElementById('postContent').value = '';
+                document.getElementById('contentWarning').checked = false;
+                
+                // Reload posts
+                loadPosts();
+                
+                showNotification('Your story has found sanctuary. Thank you for your courage.', 'success');
+            } else {
+                throw new Error('Failed to create post');
+            }
+        } catch (error) {
+            console.error('Error submitting post:', error);
+            showNotification('Failed to share your story. Please try again.', 'error');
+        }
+    }
+
+    // Render posts
+    function renderPosts() {
+        const container = document.getElementById('postsContainer');
+        const filteredPosts = currentFilter === 'all' 
+            ? allPosts 
+            : allPosts.filter(post => post.topic === currentFilter);
+        
+        container.innerHTML = filteredPosts.map(post => createPostHTML(post)).join('');
+    }
+
+    // Create post HTML
+    function createPostHTML(post) {
+        const timeAgo = getTimeAgo(new Date(post.timestamp));
+        const topicLabels = {
+            regret: 'Regret',
+            trauma: 'Trauma',
+            gbv: 'GBV',
+            background: 'Background',
+            confessions: 'Confession',
+            other: 'Other'
+        };
+        
+        return `
+            <div class="post-card bg-white rounded-lg shadow-md p-6 fade-in transition-colors duration-300">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-dove text-purple-600"></i>
                         </div>
-                        ${post.has_warning ? '<span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">Content Warning</span>' : ''}
+                        <div>
+                            <p class="font-medium text-gray-800">Anonymous Soul</p>
+                            <p class="text-sm text-gray-600">${timeAgo} • ${topicLabels[post.topic]}</p>
+                        </div>
                     </div>
-                    
-                    <div class="mb-4">
-                        <p class="text-gray-700 leading-relaxed">${post.content}</p>
+                    ${post.has_warning ? '<span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">Content Warning</span>' : ''}
+                </div>
+                
+                <div class="mb-4">
+                    <p class="text-gray-700 leading-relaxed">${post.content}</p>
+                </div>
+                
+                <div class="flex items-center justify-between pt-4 border-t border-gray-200">
+                    <div class="flex space-x-4">
+                        <button onclick="addReaction(${post.id}, 'support')" class="support-reaction flex items-center space-x-1 text-gray-600 hover:text-purple-600">
+                            <i class="fas fa-heart"></i>
+                            <span class="text-sm">${post.reactions.support}</span>
+                        </button>
+                        <button onclick="addReaction(${post.id}, 'strength')" class="support-reaction flex items-center space-x-1 text-gray-600 hover:text-blue-600">
+                            <i class="fas fa-fist-raised"></i>
+                            <span class="text-sm">${post.reactions.strength}</span>
+                        </button>
+                        <button onclick="addReaction(${post.id}, 'hope')" class="support-reaction flex items-center space-x-1 text-gray-600 hover:text-green-600">
+                            <i class="fas fa-sun"></i>
+                            <span class="text-sm">${post.reactions.hope}</span>
+                        </button>
                     </div>
-                    
-                    <div class="flex items-center justify-between pt-4 border-t border-gray-200">
-                        <div class="flex space-x-4">
-                            <button onclick="addReaction(${post.id}, 'support')" class="support-reaction flex items-center space-x-1 text-gray-600 hover:text-purple-600">
-                                <i class="fas fa-heart"></i>
-                                <span class="text-sm">${post.reactions.support}</span>
-                            </button>
-                            <button onclick="addReaction(${post.id}, 'strength')" class="support-reaction flex items-center space-x-1 text-gray-600 hover:text-blue-600">
-                                <i class="fas fa-fist-raised"></i>
-                                <span class="text-sm">${post.reactions.strength}</span>
-                            </button>
-                            <button onclick="addReaction(${post.id}, 'hope')" class="support-reaction flex items-center space-x-1 text-gray-600 hover:text-green-600">
-                                <i class="fas fa-sun"></i>
-                                <span class="text-sm">${post.reactions.hope}</span>
-                            </button>
-                        </div>
-                        <div class="flex space-x-2">
-                            <button onclick="toggleComments(${post.id})" class="text-gray-400 hover:text-blue-600 text-sm">
-                                <i class="fas fa-comment mr-1"></i>Comments (0)
-                            </button>
-                            <button onclick="reportPost(${post.id})" class="text-gray-400 hover:text-red-600 text-sm">
-                                <i class="fas fa-flag mr-1"></i>Report
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Comments Section -->
-                    <div id="comments-${post.id}" class="comment-section mt-4">
-                        <div class="border-t border-gray-200 pt-4">
-                            <h4 class="font-medium text-gray-800 mb-3">Community Support</h4>
-                            
-                            <!-- Comments List -->
-                            <div class="space-y-3 mb-4">
-                                <!-- Comments will be loaded here -->
-                            </div>
-                            
-                            <!-- Add Comment Form -->
-                            <form onsubmit="addComment(event, ${post.id})" class="flex space-x-2">
-                                <input type="text" id="comment-input-${post.id}" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent" placeholder="Offer your support...">
-                                <button type="submit" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
-                                    <i class="fas fa-paper-plane"></i>
-                                </button>
-                            </form>
-                        </div>
+                    <div class="flex space-x-2">
+                        <button onclick="toggleComments(${post.id})" class="text-gray-400 hover:text-blue-600 text-sm">
+                            <i class="fas fa-comment mr-1"></i>Comments (${post.comments ? post.comments.length : 0})
+                        </button>
+                        <button onclick="reportPost(${post.id})" class="text-gray-400 hover:text-red-600 text-sm">
+                            <i class="fas fa-flag mr-1"></i>Report
+                        </button>
                     </div>
                 </div>
-            `;
-        }
+                
+                <!-- Comments Section -->
+                <div id="comments-${post.id}" class="comment-section mt-4">
+                    <div class="border-t border-gray-200 pt-4">
+                        <h4 class="font-medium text-gray-800 mb-3">Community Support</h4>
+                        
+                        <!-- Comments List -->
+                        <div class="space-y-3 mb-4">
+                            ${post.comments && post.comments.length > 0 
+                                ? post.comments.map(comment => createCommentHTML(comment)).join('') 
+                                : '<p class="text-sm text-gray-500">No comments yet. Be the first to offer support.</p>'}
+                        </div>
+                        
+                        <!-- Add Comment Form -->
+                        <form onsubmit="addComment(event, ${post.id})" class="flex space-x-2">
+                            <input type="text" id="comment-input-${post.id}" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent" placeholder="Offer your support...">
+                            <button type="submit" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
 
-        // Load comments for a post
-        async function loadComments(postId) {
-            try {
-                const response = await fetch(`${API_BASE_URL}/comments/${postId}`);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const comments = await response.json();
-                return comments;
-            } catch (error) {
-                console.error('Error loading comments:', error);
-                return [];
+    // Load comments for a post
+    async function loadComments(postId) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/comments/${postId}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+            const comments = await response.json();
+            return comments;
+        } catch (error) {
+            console.error('Error loading comments:', error);
+            // Fallback to sample comments if available
+            const post = allPosts.find(p => p.id === postId);
+            return post && post.comments ? post.comments : [];
         }
+    }
 
-        // Toggle comments section and load comments
-        async function toggleComments(postId) {
-            const commentsSection = document.getElementById(`comments-${postId}`);
-            const isExpanded = commentsSection.classList.contains('expanded');
+    // Toggle comments section and load comments
+    async function toggleComments(postId) {
+        const commentsSection = document.getElementById(`comments-${postId}`);
+        const isExpanded = commentsSection.classList.contains('expanded');
+        
+        if (!isExpanded) {
+            // Load comments
+            const comments = await loadComments(postId);
             
-            if (!isExpanded) {
-                // Load comments
+            // Update comments in the DOM
+            const commentsList = commentsSection.querySelector('.space-y-3');
+            if (comments.length > 0) {
+                commentsList.innerHTML = comments.map(comment => createCommentHTML(comment)).join('');
+            } else {
+                commentsList.innerHTML = '<p class="text-sm text-gray-500">No comments yet. Be the first to offer support.</p>';
+            }
+            
+            // Update comment count
+            const commentButton = commentsSection.parentElement.querySelector('.fa-comment').parentElement;
+            commentButton.innerHTML = `<i class="fas fa-comment mr-1"></i>Comments (${comments.length})`;
+            
+            // Expand the section
+            commentsSection.classList.add('expanded');
+        } else {
+            // Collapse the section
+            commentsSection.classList.remove('expanded');
+        }
+    }
+
+    // Create comment HTML
+    function createCommentHTML(comment) {
+        const timeAgo = getTimeAgo(new Date(comment.timestamp));
+        
+        return `
+            <div class="bg-gray-50 rounded-lg p-3">
+                <div class="flex items-start space-x-2">
+                    <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-user text-blue-600 text-xs"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm text-gray-700">${comment.content}</p>
+                        <p class="text-xs text-gray-500 mt-1">${timeAgo}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Add comment to database
+    async function addComment(event, postId) {
+        event.preventDefault();
+        
+        const input = document.getElementById(`comment-input-${postId}`);
+        const content = input.value.trim();
+        
+        if (!content) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${API_BASE_URL}/comments/${postId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content })
+            });
+            
+            if (response.ok) {
+                // Clear input
+                input.value = '';
+                
+                // Reload comments for this post
                 const comments = await loadComments(postId);
                 
                 // Update comments in the DOM
+                const commentsSection = document.getElementById(`comments-${postId}`);
                 const commentsList = commentsSection.querySelector('.space-y-3');
-                commentsList.innerHTML = comments.map(comment => createCommentHTML(comment)).join('');
+                if (comments.length > 0) {
+                    commentsList.innerHTML = comments.map(comment => createCommentHTML(comment)).join('');
+                } else {
+                    commentsList.innerHTML = '<p class="text-sm text-gray-500">No comments yet. Be the first to offer support.</p>';
+                }
                 
                 // Update comment count
                 const commentButton = commentsSection.parentElement.querySelector('.fa-comment').parentElement;
                 commentButton.innerHTML = `<i class="fas fa-comment mr-1"></i>Comments (${comments.length})`;
                 
-                // Expand the section
-                commentsSection.classList.add('expanded');
+                showNotification('Your support has been shared. Thank you for your kindness.', 'success');
             } else {
-                // Collapse the section
-                commentsSection.classList.remove('expanded');
+                throw new Error('Failed to add comment');
             }
+        } catch (error) {
+            console.error('Error adding comment:', error);
+            showNotification('Failed to post your comment. Please try again.', 'error');
         }
+    }
 
-        // Create comment HTML
-        function createCommentHTML(comment) {
-            const timeAgo = getTimeAgo(new Date(comment.timestamp));
-            
-            return `
-                <div class="bg-gray-50 rounded-lg p-3">
-                    <div class="flex items-start space-x-2">
-                        <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                            <i class="fas fa-user text-blue-600 text-xs"></i>
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-sm text-gray-700">${comment.content}</p>
-                            <p class="text-xs text-gray-500 mt-1">${timeAgo}</p>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Add comment to database
-        async function addComment(event, postId) {
-            event.preventDefault();
-            
-            const input = document.getElementById(`comment-input-${postId}`);
-            const content = input.value.trim();
-            
-            if (!content) {
-                return;
-            }
-            
-            try {
-                const response = await fetch(`${API_BASE_URL}/comments/${postId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ content })
-                });
-                
-                if (response.ok) {
-                    // Clear input
-                    input.value = '';
-                    
-                    // Reload comments for this post
-                    const comments = await loadComments(postId);
-                    
-                    // Update comments in the DOM
-                    const commentsSection = document.getElementById(`comments-${postId}`);
-                    const commentsList = commentsSection.querySelector('.space-y-3');
-                    commentsList.innerHTML = comments.map(comment => createCommentHTML(comment)).join('');
-                    
-                    // Update comment count
-                    const commentButton = commentsSection.parentElement.querySelector('.fa-comment').parentElement;
-                    commentButton.innerHTML = `<i class="fas fa-comment mr-1"></i>Comments (${comments.length})`;
-                    
-                    showNotification('Your support has been shared. Thank you for your kindness.', 'success');
-                } else {
-                    throw new Error('Failed to add comment');
-                }
-            } catch (error) {
-                console.error('Error adding comment:', error);
-                showNotification('Failed to post your comment. Please try again.', 'error');
-            }
-        }
-
-        // Update reaction count in database
-        async function addReaction(postId, reactionType) {
-            try {
-                const response = await fetch(`${API_BASE_URL}/reactions/${postId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ reactionType })
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    // Update the reaction count in the DOM
-                    const postCard = document.getElementById(`comments-${postId}`).parentElement;
-                    const reactionButton = Array.from(postCard.querySelectorAll('.support-reaction')).find(
-                        btn => btn.textContent.includes(reactionType.charAt(0).toUpperCase() + reactionType.slice(1))
-                    );
-                    
-                    if (reactionButton) {
-                        reactionButton.innerHTML = `
-                            <i class="fas fa-${reactionType === 'support' ? 'heart' : reactionType === 'strength' ? 'fist-raised' : 'sun'}"></i>
-                            <span class="text-sm">${data.reactions[reactionType]}</span>
-                        `;
-                    }
-                    
-                    // Animate the button
-                    reactionButton.classList.add('active');
-                    setTimeout(() => {
-                        reactionButton.classList.remove('active');
-                    }, 500);
-                } else {
-                    throw new Error('Failed to update reaction');
-                }
-            } catch (error) {
-                console.error('Error updating reaction:', error);
-                showNotification('Failed to register your reaction. Please try again.', 'error');
-            }
-        }
-
-        // Filter posts
-        function filterPosts(topic) {
-            currentFilter = topic;
-            
-            // Update button styles
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.remove('bg-purple-600', 'text-white');
-                btn.classList.add('bg-gray-200', 'text-gray-700');
+    // Update reaction count in database
+    async function addReaction(postId, reactionType) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/reactions/${postId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reactionType })
             });
             
-            event.target.classList.remove('bg-gray-200', 'text-gray-700');
-            event.target.classList.add('bg-purple-600', 'text-white');
-            
-            // Re-render posts with the new filter
-            renderPosts();
-        }
-
-        // Report post
-        function reportPost(postId) {
-            if (confirm('Are you sure you want to report this post? Our sanctuary guardians will review it.')) {
-                showNotification('Thank you for helping protect our sanctuary. The post has been reported.', 'info');
+            if (response.ok) {
+                const data = await response.json();
+                
+                // Update the reaction count in the DOM
+                const postCard = document.getElementById(`comments-${postId}`).parentElement;
+                const reactionButton = Array.from(postCard.querySelectorAll('.support-reaction')).find(
+                    btn => btn.textContent.includes(reactionType.charAt(0).toUpperCase() + reactionType.slice(1))
+                );
+                
+                if (reactionButton) {
+                    reactionButton.innerHTML = `
+                        <i class="fas fa-${reactionType === 'support' ? 'heart' : reactionType === 'strength' ? 'fist-raised' : 'sun'}"></i>
+                        <span class="text-sm">${data.reactions[reactionType]}</span>
+                    `;
+                }
+                
+                // Animate the button
+                reactionButton.classList.add('active');
+                setTimeout(() => {
+                    reactionButton.classList.remove('active');
+                }, 500);
+            } else {
+                throw new Error('Failed to update reaction');
             }
+        } catch (error) {
+            console.error('Error updating reaction:', error);
+            showNotification('Failed to register your reaction. Please try again.', 'error');
         }
+    }
 
-        // Show guidelines
-        function showGuidelines() {
-            document.getElementById('guidelinesModal').classList.remove('hidden');
-        }
+    // Filter posts
+    function filterPosts(topic) {
+        currentFilter = topic;
+        
+        // Update button styles
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.remove('bg-purple-600', 'text-white');
+            btn.classList.add('bg-gray-200', 'text-gray-700');
+        });
+        
+        event.target.classList.remove('bg-gray-200', 'text-gray-700');
+        event.target.classList.add('bg-purple-600', 'text-white');
+        
+        // Re-render posts with the new filter
+        renderPosts();
+    }
 
-        // Show resources
-        function showResources() {
-            document.getElementById('resourcesModal').classList.remove('hidden');
+    // Report post
+    function reportPost(postId) {
+        if (confirm('Are you sure you want to report this post? Our sanctuary guardians will review it.')) {
+            showNotification('Thank you for helping protect our sanctuary. The post has been reported.', 'info');
         }
+    }
 
-        // Close modal
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.add('hidden');
-        }
+    // Show guidelines
+    function showGuidelines() {
+        document.getElementById('guidelinesModal').classList.remove('hidden');
+    }
 
-        // Show notification
-        function showNotification(message, type) {
-            const colors = {
-                success: 'bg-green-500',
-                error: 'bg-red-500',
-                info: 'bg-blue-500'
-            };
-            
-            const notification = document.createElement('div');
-            notification.className = `fixed top-20 right-4 ${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg z-50 fade-in`;
-            notification.innerHTML = `
-                <div class="flex items-center">
-                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} mr-2"></i>
-                    <span>${message}</span>
-                </div>
-            `;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.remove();
-            }, 3000);
-        }
+    // Show resources
+    function showResources() {
+        document.getElementById('resourcesModal').classList.remove('hidden');
+    }
 
-        // Get time ago
-        function getTimeAgo(date) {
-            const seconds = Math.floor((new Date() - date) / 1000);
-            
-            if (seconds < 60) return 'just now';
-            if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
-            if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
-            return `${Math.floor(seconds / 86400)} days ago`;
-        }
+    // Close modal
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.add('hidden');
+    }
 
-        // Close modals on outside click
-        window.onclick = function(event) {
-            if (event.target.classList.contains('bg-opacity-50')) {
-                event.target.classList.add('hidden');
-            }
+    // Show notification
+    function showNotification(message, type) {
+        const colors = {
+            success: 'bg-green-500',
+            error: 'bg-red-500',
+            info: 'bg-blue-500'
+        };
+        
+        const notification = document.createElement('div');
+        notification.className = `fixed top-20 right-4 ${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg z-50 fade-in`;
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} mr-2"></i>
+                <span>${message}</span>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
+
+    // Get time ago
+    function getTimeAgo(date) {
+        const seconds = Math.floor((new Date() - date) / 1000);
+        
+        if (seconds < 60) return 'just now';
+        if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
+        if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+        return `${Math.floor(seconds / 86400)} days ago`;
+    }
+
+    // Close modals on outside click
+    window.onclick = function(event) {
+        if (event.target.classList.contains('bg-opacity-50')) {
+            event.target.classList.add('hidden');
         }
-    </script>
+    }
+</script>
 </body>
 </html>
+
