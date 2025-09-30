@@ -363,294 +363,168 @@
 
     <script>
     // API endpoints
-    const API_BASE_URL = '/.netlify/functions';
+const API_BASE_URL = '/.netlify/functions';
 
-    // Initialize
-    document.addEventListener('DOMContentLoaded', () => {
-        loadPosts();
-        checkDarkMode();
-    });
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    loadPosts();
+    checkDarkMode();
+});
 
-    // Dark mode functionality
-    function toggleDarkMode() {
-        document.body.classList.toggle('dark');
-        const icon = document.getElementById('darkModeIcon');
-        icon.classList.toggle('fa-moon');
-        icon.classList.toggle('fa-sun');
-        localStorage.setItem('darkMode', document.body.classList.contains('dark'));
-    }
-
-    function checkDarkMode() {
-        if (localStorage.getItem('darkMode') === 'true') {
-            document.body.classList.add('dark');
-            document.getElementById('darkModeIcon').classList.remove('fa-moon');
-            document.getElementById('darkModeIcon').classList.add('fa-sun');
+// Load posts from database
+async function loadPosts() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/posts`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
+        const posts = await response.json();
+        renderPosts(posts);
+    } catch (error) {
+        console.error('Error loading posts:', error);
+        showNotification('Failed to load posts. Please try again later.', 'error');
     }
+}
 
-    // Load posts from database
-    async function loadPosts() {
-        try {
-            const response = await fetch(`${API_BASE_URL}/posts`);
-            const posts = await response.json();
-            renderPosts(posts);
-        } catch (error) {
-            console.error('Error loading posts:', error);
-            showNotification('Failed to load posts. Please try again later.', 'error');
+// Submit post to database
+async function submitPost(event) {
+    event.preventDefault();
+    
+    const topic = document.getElementById('postTopic').value;
+    const content = document.getElementById('postContent').value.trim();
+    const hasWarning = document.getElementById('contentWarning').checked;
+    
+    if (!content) {
+        showNotification('Please share your story before submitting.', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/posts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ topic, content, hasWarning })
+        });
+        
+        if (response.ok) {
+            document.getElementById('postContent').value = '';
+            document.getElementById('contentWarning').checked = false;
+            loadPosts();
+            showNotification('Your story has found sanctuary. Thank you for your courage.', 'success');
+        } else {
+            throw new Error('Failed to create post');
         }
+    } catch (error) {
+        console.error('Error submitting post:', error);
+        showNotification('Failed to share your story. Please try again.', 'error');
     }
+}
 
-    // Submit post to database
-    async function submitPost(event) {
-        event.preventDefault();
-        
-        const topic = document.getElementById('postTopic').value;
-        const content = document.getElementById('postContent').value.trim();
-        const hasWarning = document.getElementById('contentWarning').checked;
-        
-        if (!content) {
-            showNotification('Please share your story before submitting.', 'error');
-            return;
+// Load comments for a post
+async function loadComments(postId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/comments/${postId}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
-        try {
-            const response = await fetch(`${API_BASE_URL}/posts`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ topic, content, hasWarning })
-            });
-            
-            if (response.ok) {
-                // Reset form
-                document.getElementById('postContent').value = '';
-                document.getElementById('contentWarning').checked = false;
-                
-                // Reload posts
-                loadPosts();
-                
-                showNotification('Your story has found sanctuary. Thank you for your courage.', 'success');
-            } else {
-                throw new Error('Failed to create post');
-            }
-        } catch (error) {
-            console.error('Error submitting post:', error);
-            showNotification('Failed to share your story. Please try again.', 'error');
-        }
+        const comments = await response.json();
+        return comments;
+    } catch (error) {
+        console.error('Error loading comments:', error);
+        return [];
     }
+}
 
-    // Render posts
-    function renderPosts(posts) {
-        const container = document.getElementById('postsContainer');
-        const filteredPosts = currentFilter === 'all' 
-            ? posts 
-            : posts.filter(post => post.topic === currentFilter);
+// Toggle comments section and load comments
+async function toggleComments(postId) {
+    const commentsSection = document.getElementById(`comments-${postId}`);
+    const isExpanded = commentsSection.classList.contains('expanded');
+    
+    if (!isExpanded) {
+        const comments = await loadComments(postId);
+        const commentsList = commentsSection.querySelector('.space-y-3');
+        commentsList.innerHTML = comments.map(comment => createCommentHTML(comment)).join('');
         
-        container.innerHTML = filteredPosts.map(post => createPostHTML(post)).join('');
-    }
-
-    // Create post HTML
-    function createPostHTML(post) {
-        const timeAgo = getTimeAgo(new Date(post.timestamp));
-        const topicLabels = {
-            regret: 'Regret',
-            trauma: 'Trauma',
-            gbv: 'GBV',
-            background: 'Background',
-            confessions: 'Confession',
-            other: 'Other'
-        };
+        const commentButton = commentsSection.parentElement.querySelector('.fa-comment').parentElement;
+        commentButton.innerHTML = `<i class="fas fa-comment mr-1"></i>Comments (${comments.length})`;
         
-        return `
-            <div class="post-card bg-white rounded-lg shadow-md p-6 fade-in transition-colors duration-300">
-                <div class="flex items-start justify-between mb-4">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                            <i class="fas fa-dove text-purple-600"></i>
-                        </div>
-                        <div>
-                            <p class="font-medium text-gray-800">Anonymous Soul</p>
-                            <p class="text-sm text-gray-600">${timeAgo} • ${topicLabels[post.topic]}</p>
-                        </div>
-                    </div>
-                    ${post.has_warning ? '<span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">Content Warning</span>' : ''}
-                </div>
-                
-                <div class="mb-4">
-                    <p class="text-gray-700 leading-relaxed">${post.content}</p>
-                </div>
-                
-                <div class="flex items-center justify-between pt-4 border-t border-gray-200">
-                    <div class="flex space-x-4">
-                        <button onclick="addReaction(${post.id}, 'support')" class="support-reaction flex items-center space-x-1 text-gray-600 hover:text-purple-600">
-                            <i class="fas fa-heart"></i>
-                            <span class="text-sm">${post.reactions.support}</span>
-                        </button>
-                        <button onclick="addReaction(${post.id}, 'strength')" class="support-reaction flex items-center space-x-1 text-gray-600 hover:text-blue-600">
-                            <i class="fas fa-fist-raised"></i>
-                            <span class="text-sm">${post.reactions.strength}</span>
-                        </button>
-                        <button onclick="addReaction(${post.id}, 'hope')" class="support-reaction flex items-center space-x-1 text-gray-600 hover:text-green-600">
-                            <i class="fas fa-sun"></i>
-                            <span class="text-sm">${post.reactions.hope}</span>
-                        </button>
-                    </div>
-                    <div class="flex space-x-2">
-                        <button onclick="toggleComments(${post.id})" class="text-gray-400 hover:text-blue-600 text-sm">
-                            <i class="fas fa-comment mr-1"></i>Comments (0)
-                        </button>
-                        <button onclick="reportPost(${post.id})" class="text-gray-400 hover:text-red-600 text-sm">
-                            <i class="fas fa-flag mr-1"></i>Report
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- Comments Section -->
-                <div id="comments-${post.id}" class="comment-section mt-4">
-                    <div class="border-t border-gray-200 pt-4">
-                        <h4 class="font-medium text-gray-800 mb-3">Community Support</h4>
-                        
-                        <!-- Comments List -->
-                        <div class="space-y-3 mb-4">
-                            <!-- Comments will be loaded here -->
-                        </div>
-                        
-                        <!-- Add Comment Form -->
-                        <form onsubmit="addComment(event, ${post.id})" class="flex space-x-2">
-                            <input type="text" id="comment-input-${post.id}" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent" placeholder="Offer your support...">
-                            <button type="submit" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
-                                <i class="fas fa-paper-plane"></i>
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        `;
+        commentsSection.classList.add('expanded');
+    } else {
+        commentsSection.classList.remove('expanded');
     }
+}
 
-    // Load comments for a post
-    async function loadComments(postId) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/comments/${postId}`);
-            const comments = await response.json();
-            return comments;
-        } catch (error) {
-            console.error('Error loading comments:', error);
-            return [];
-        }
-    }
-
-    // Toggle comments section and load comments
-    async function toggleComments(postId) {
-        const commentsSection = document.getElementById(`comments-${postId}`);
-        const isExpanded = commentsSection.classList.contains('expanded');
+// Add comment to database
+async function addComment(event, postId) {
+    event.preventDefault();
+    
+    const input = document.getElementById(`comment-input-${postId}`);
+    const content = input.value.trim();
+    
+    if (!content) return;
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/comments/${postId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content })
+        });
         
-        if (!isExpanded) {
-            // Load comments
+        if (response.ok) {
+            input.value = '';
             const comments = await loadComments(postId);
-            
-            // Update comments in the DOM
+            const commentsSection = document.getElementById(`comments-${postId}`);
             const commentsList = commentsSection.querySelector('.space-y-3');
             commentsList.innerHTML = comments.map(comment => createCommentHTML(comment)).join('');
             
-            // Update comment count
             const commentButton = commentsSection.parentElement.querySelector('.fa-comment').parentElement;
             commentButton.innerHTML = `<i class="fas fa-comment mr-1"></i>Comments (${comments.length})`;
             
-            // Expand the section
-            commentsSection.classList.add('expanded');
+            showNotification('Your support has been shared. Thank you for your kindness.', 'success');
         } else {
-            // Collapse the section
-            commentsSection.classList.remove('expanded');
+            throw new Error('Failed to add comment');
         }
+    } catch (error) {
+        console.error('Error adding comment:', error);
+        showNotification('Failed to post your comment. Please try again.', 'error');
     }
+}
 
-    // Create comment HTML
-    function createCommentHTML(comment) {
-        const timeAgo = getTimeAgo(new Date(comment.timestamp));
+// Update reaction count in database
+async function addReaction(postId, reactionType) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/reactions/${postId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reactionType })
+        });
         
-        return `
-            <div class="bg-gray-50 rounded-lg p-3">
-                <div class="flex items-start space-x-2">
-                    <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        <i class="fas fa-user text-blue-600 text-xs"></i>
-                    </div>
-                    <div class="flex-1">
-                        <p class="text-sm text-gray-700">${comment.content}</p>
-                        <p class="text-xs text-gray-500 mt-1">${timeAgo}</p>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    // Add comment to database
-    async function addComment(event, postId) {
-        event.preventDefault();
-        
-        const input = document.getElementById(`comment-input-${postId}`);
-        const content = input.value.trim();
-        
-        if (!content) {
-            return;
-        }
-        
-        try {
-            const response = await fetch(`${API_BASE_URL}/comments/${postId}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content })
-            });
+        if (response.ok) {
+            const data = await response.json();
+            const postCard = document.getElementById(`comments-${postId}`).parentElement;
+            const reactionButton = Array.from(postCard.querySelectorAll('.support-reaction')).find(
+                btn => btn.textContent.includes(reactionType.charAt(0).toUpperCase() + reactionType.slice(1))
+            );
             
-            if (response.ok) {
-                // Clear input
-                input.value = '';
-                
-                // Reload comments for this post
-                const comments = await loadComments(postId);
-                
-                // Update comments in the DOM
-                const commentsSection = document.getElementById(`comments-${postId}`);
-                const commentsList = commentsSection.querySelector('.space-y-3');
-                commentsList.innerHTML = comments.map(comment => createCommentHTML(comment)).join('');
-                
-                // Update comment count
-                const commentButton = commentsSection.parentElement.querySelector('.fa-comment').parentElement;
-                commentButton.innerHTML = `<i class="fas fa-comment mr-1"></i>Comments (${comments.length})`;
-                
-                showNotification('Your support has been shared. Thank you for your kindness.', 'success');
-            } else {
-                throw new Error('Failed to add comment');
+            if (reactionButton) {
+                reactionButton.innerHTML = `
+                    <i class="fas fa-${reactionType === 'support' ? 'heart' : reactionType === 'strength' ? 'fist-raised' : 'sun'}"></i>
+                    <span class="text-sm">${data.reactions[reactionType]}</span>
+                `;
             }
-        } catch (error) {
-            console.error('Error adding comment:', error);
-            showNotification('Failed to post your comment. Please try again.', 'error');
-        }
-    }
-
-    // Update reaction count in database
-    async function addReaction(postId, reactionType) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/reactions/${postId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ reactionType })
-            });
             
-            if (response.ok) {
-                const data = await response.json();
-                
-                // Update the reaction count in the DOM
-                const postCard = document.getElementById(`comments-${postId}`).parentElement;
-                const reactionButton = Array.from(postCard.querySelectorAll('.support-reaction')).find(
-                    btn => btn.textContent.includes(reactionType.charAt(0).toUpperCase() + reactionType.slice(1))
-                );
-                
-                if (reactionButton) {
-                    reactionButton.innerHTML = `
-                        <i class="fas fa-${reactionType === 'support' ? 'heart' : reactionType === 'strength' ? 'fist-raised' : 'sun'}"></i>
-                        <span class="text-sm">${data.reactions[reactionType]}</span>
-                    `;
-                }
+            reactionButton.classList.add('active');
+            setTimeout(() => {
+                reactionButton.classList.remove('active');
+            }, 500);
+        } else {
+            throw new Error('Failed to update reaction');
+        }
+    } catch (error) {
+        console.error('Error updating reaction:', error);
+        showNotification('Failed to register your reaction. Please try again.', 'error');
+    }
+}
                 
                 // Animate the button
                 reactionButton.classList.add('active');
@@ -750,3 +624,4 @@
 </body>
 
 </html>
+
