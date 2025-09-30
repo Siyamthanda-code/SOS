@@ -1,40 +1,13 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SOS: Sanctuary of Solace - Anonymous Support Community</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap');
-        
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        
-        .brand-title {
-            font-family: 'Playfair Display', serif;
-        }
-        
-        .dark {
-            background-color: #0f172a;
-            color: #e2e8f0;
-        }
-        
-        .dark .bg-white {
-            background-color: #1e293b;
-        }
-        
-        .dark .bg-gray-50 {
-            background-color: #1e293b;
-        }
-        
-        .dark .bg-gray-100 {
-            background-color: #334155;
-        }
-        
-        .dark .text-gray-600 {
+[build]
+  functions = "netlify/functions"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"        .dark .text-gray-600 {
             color: #94a3b8;
         }
         
@@ -726,4 +699,5 @@
         }
     </script>
 </body>
+
 </html>
