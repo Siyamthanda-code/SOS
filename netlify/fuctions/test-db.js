@@ -7,17 +7,7 @@ const pool = new Pool({
 
 exports.handler = async (event, context) => {
   try {
-    // Test basic connection
     const result = await pool.query('SELECT NOW()');
-    
-    // Test if tables exist
-    let tablesExist = false;
-    try {
-      await pool.query('SELECT * FROM posts LIMIT 1');
-      tablesExist = true;
-    } catch (e) {
-      // Table doesn't exist or other error
-    }
     
     return {
       statusCode: 200,
@@ -27,8 +17,7 @@ exports.handler = async (event, context) => {
       },
       body: JSON.stringify({ 
         message: 'Database connection successful!',
-        time: result.rows[0].now,
-        tablesExist
+        time: result.rows[0].now
       })
     };
   } catch (error) {
