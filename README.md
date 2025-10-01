@@ -25,11 +25,11 @@ Visit the live site: [SOS: Sanctuary of Solace](https://ventsos.netlify.app)
 
 ## 📸 Screenshots
 
-![SOS Screenshot](SOS G.PNG)
+![SOS Screenshot](SOS%20G.PNG)
 
-![SOS Screenshot](SOS R.PNG)
+![SOS Screenshot](SOS%20R.PNG)
 
-![SOS Screenshot](SOS SUB.PNG)
+![SOS Screenshot](SOS%20SUB.PNG)
 
 ## 🛠️ Tech Stack
 
