@@ -6,6 +6,8 @@
 
 A safe, anonymous online support community where people can share their stories, struggles, and experiences with others who understand. SOS: Sanctuary of Solace provides a judgment-free space for healing, support, and connection.
 
+![SOS Screenshot](SOS.PNG)
+
 ## 🌟 Features
 
 - **Anonymous Sharing**: Share your story without revealing your identity
@@ -22,6 +24,12 @@ A safe, anonymous online support community where people can share their stories,
 Visit the live site: [SOS: Sanctuary of Solace](https://ventsos.netlify.app)
 
 ## 📸 Screenshots
+
+![SOS Screenshot](SOS G.PNG)
+
+![SOS Screenshot](SOS R.PNG)
+
+![SOS Screenshot](SOS SUB.PNG)
 
 ## 🛠️ Tech Stack
 
